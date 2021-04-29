@@ -1,6 +1,6 @@
-package me.kbrewster.eventbus.collection
+package me.kbrewster.eventbus.forge.collection
 
-import me.kbrewster.eventbus.EventBus
+import me.kbrewster.eventbus.forge.EventBus
 import java.util.Comparator
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -9,7 +9,7 @@ class ConcurrentSubscriberArrayList : CopyOnWriteArrayList<EventBus.Subscriber>(
         if (size == 0) {
             super.add(element)
         } else {
-            var index = this.binarySearch(element, Comparator.comparingInt { obj: EventBus.Subscriber -> obj.priority })
+            var index = this.binarySearch(element, Comparator.comparing { obj: EventBus.Subscriber -> obj.priority })
             if (index < 0) index = -(index + 1)
             super.add(index, element)
         }
@@ -21,7 +21,7 @@ class SubscriberArrayList : ArrayList<EventBus.Subscriber>() {
         if (size == 0) {
             super.add(element)
         } else {
-            var index = this.binarySearch(element, Comparator.comparingInt { obj: EventBus.Subscriber -> obj.priority })
+            var index = this.binarySearch(element, Comparator.comparing { obj: EventBus.Subscriber -> obj.priority })
             if (index < 0) index = -(index + 1)
             super.add(index, element)
         }

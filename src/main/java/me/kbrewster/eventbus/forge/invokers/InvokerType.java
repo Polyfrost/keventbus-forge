@@ -1,10 +1,10 @@
-package me.kbrewster.eventbus.invokers;
+package me.kbrewster.eventbus.forge.invokers;
 
 import java.lang.reflect.Method;
 
 public interface InvokerType {
 
-    SubscriberMethod setup(Object object, Class clazz, Class parameterClazz, Method method) throws Throwable;
+    SubscriberMethod setup(Object object, Class<?> clazz, Class<?> parameterClazz, Method method) throws Throwable;
 
     @FunctionalInterface
     interface SubscriberMethod

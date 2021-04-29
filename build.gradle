@@ -1,8 +1,28 @@
 // TODO: https://docs.github.com/en/free-pro-team@latest/packages/using-github-packages-with-your-projects-ecosystem/configuring-gradle-for-use-with-github-packages#example-using-gradle-groovy-for-a-single-package-in-a-repository
+buildscript {
+    repositories {
+        maven {
+            name = "forge"
+            url = "https://maven.minecraftforge.net"
+        }
+
+        maven {
+            name = "jitpack"
+            url = "https://jitpack.io/"
+        }
+    }
+
+    dependencies {
+        classpath "com.github.asbyth:ForgeGradle:86b2392"
+    }
+}
+
 plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm' version '1.3.72'
 }
+
+apply plugin: "net.minecraftforge.gradle.forge"
 
 group 'org.example'
 version '1.0-SNAPSHOT'
@@ -10,6 +30,14 @@ version '1.0-SNAPSHOT'
 repositories {
     mavenCentral()
     maven { url 'https://jitpack.io' }
+}
+
+minecraft {
+    version = "1.8.9-11.15.1.2318-1.8.9"
+    runDir = "run"
+
+    mappings = "stable_22"
+    makeObfSourceJar = false
 }
 
 dependencies {

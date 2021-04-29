@@ -1,12 +1,7 @@
-import me.kbrewster.eventbus.Subscribe
-import me.kbrewster.eventbus.eventbus
-import me.kbrewster.eventbus.exception.ExceptionHandler
-import me.kbrewster.eventbus.invokers.LMFInvoker
+import me.kbrewster.eventbus.forge.Subscribe
+import me.kbrewster.eventbus.forge.eventbus
+import me.kbrewster.eventbus.forge.invokers.LMFInvoker
 import org.junit.jupiter.api.*
-import sun.plugin2.message.Message
-
-
-import kotlin.random.Random
 
 class MessageReceivedEvent(val message: String)
 
@@ -17,7 +12,7 @@ class EventBusTest {
     private val eventBus = eventbus {
         invoker { LMFInvoker() }
         exceptionHandler { exception -> println("Error occurred in method: ${exception.message}")  }
-        threadSaftey { false }
+        threadSafety { false }
     }
 
     @Test

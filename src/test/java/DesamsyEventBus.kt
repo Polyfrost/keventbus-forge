@@ -1,6 +1,5 @@
 import dev.deamsy.eventbus.impl.asm.ASMEventBus
 import org.junit.jupiter.api.*
-import kotlin.random.Random
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
