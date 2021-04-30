@@ -53,7 +53,9 @@ class KEventBus @JvmOverloads constructor(
      *
      */
     fun register(obj: Any) {
-        for (method in obj.javaClass.declaredMethods) {
+        val methods = obj.javaClass.declaredMethods
+        for (i in (methods.size - 1) downTo 0) {
+            val method = methods[i]
             val sub: SubscribeEvent = method.getAnnotation(SubscribeEvent::class.java) ?: continue
 
             // verification
@@ -82,7 +84,9 @@ class KEventBus @JvmOverloads constructor(
      * Unsubscribes all `@Subscribe`'d methods inside of the `obj` instance.
      */
     fun unregister(obj: Any) {
-        for (method in obj.javaClass.declaredMethods) {
+        val methods = obj.javaClass.declaredMethods
+        for (i in (methods.size - 1) downTo 0) {
+            val method = methods[i]
             if (method.getAnnotation(SubscribeEvent::class.java) == null) {
                 continue
             }
