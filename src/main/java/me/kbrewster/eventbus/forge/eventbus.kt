@@ -11,11 +11,7 @@ import java.lang.reflect.Modifier
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
-@Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER, AnnotationTarget.PROPERTY_SETTER)
-annotation class Subscribe(val priority: Int = 0)
-
-class EventBus @JvmOverloads constructor(
+class KEventBus @JvmOverloads constructor(
     private val invokerType: InvokerType = ReflectionInvoker(),
     private val exceptionHandler: ExceptionHandler = object : ExceptionHandler {
         override fun handle(exception: Exception) {
@@ -87,7 +83,7 @@ class EventBus @JvmOverloads constructor(
      */
     fun unregister(obj: Any) {
         for (method in obj.javaClass.declaredMethods) {
-            if (method.getAnnotation(Subscribe::class.java) == null) {
+            if (method.getAnnotation(SubscribeEvent::class.java) == null) {
                 continue
             }
             subscribers[method.parameterTypes[0]]?.remove(Subscriber(obj, EventPriority.LOWEST, null))

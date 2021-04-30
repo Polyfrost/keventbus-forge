@@ -1,13 +1,13 @@
-import me.kbrewster.eventbus.forge.Subscribe
 import me.kbrewster.eventbus.forge.eventbus
 import me.kbrewster.eventbus.forge.invokers.LMFInvoker
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import org.junit.jupiter.api.*
 
 class MessageReceivedEvent(val message: String)
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class EventBusTest {
+class KEventBusTest {
 
     private val eventBus = eventbus {
         invoker { LMFInvoker() }
@@ -21,7 +21,7 @@ class EventBusTest {
         eventBus.register(this)
     }
 
-    @Subscribe
+    @SubscribeEvent
     fun `subscribed method`(event: MessageReceivedEvent) {
         // do something
     }

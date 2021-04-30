@@ -4,7 +4,7 @@ import me.kbrewster.eventbus.forge.exception.ExceptionHandler
 import me.kbrewster.eventbus.forge.invokers.InvokerType
 import me.kbrewster.eventbus.forge.invokers.ReflectionInvoker
 
-fun eventbus(lambda: EventBusBuilder.() -> Unit): EventBus {
+fun eventbus(lambda: EventBusBuilder.() -> Unit): KEventBus {
     return EventBusBuilder().apply(lambda).build()
 }
 
@@ -41,6 +41,6 @@ class EventBusBuilder {
         }
     }
 
-    fun build() = EventBus(this.invokerType, this.exceptionHandler, this.threadSafety)
+    fun build() = KEventBus(this.invokerType, this.exceptionHandler, this.threadSafety)
 
 }
