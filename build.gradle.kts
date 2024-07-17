@@ -2,7 +2,6 @@ plugins {
     kotlin("jvm") version "1.9.10"
     id("org.polyfrost.loom") version "1.6.polyfrost.5"
     id("dev.architectury.architectury-pack200") version "0.1.3"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
     java
     id("maven-publish")
 }
@@ -11,6 +10,9 @@ plugins {
 
 val baseGroup: String by project
 val version: String by project
+
+group = baseGroup
+project.version = version
 
 // Toolchains:
 java {
@@ -29,7 +31,7 @@ loom {
 }
 
 sourceSets.main {
-    output.setResourcesDir(sourceSets.main.flatMap { it.java.classesDirectory })
+    output.setResourcesDir(java.classesDirectory)
 }
 
 // Dependencies:
@@ -61,4 +63,12 @@ tasks.named<Test>("test") {
 
 tasks.withType(JavaCompile::class) {
     options.encoding = "UTF-8"
+}
+
+publishing {
+    publications {
+        register<MavenPublication>("maven") {
+            from(components.getByName("java"))
+        }
+    }
 }
