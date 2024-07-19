@@ -28,14 +28,14 @@ class DirectAndLMFTest {
         println("Direct bus subscribing: ${
             measureTimeMillis {
                 repeat(1_000) {
-                    directBus.register(this, 1)
+                    directBus.register(this)
                 }
             }
         }ms")
         println("LMF bus subscribing: ${
             measureTimeMillis {
                 repeat(1_000) {
-                    lmfBus.register(this, 1)
+                    lmfBus.register(this)
                 }
             }
         }ms")
@@ -121,14 +121,14 @@ class DirectAndLMFTest {
         println("Direct bus removing: ${
             measureTimeMillis {
                 repeat(1_000) {
-                    directBus.unregister(this, 1)
+                    directBus.unregister(this)
                 }
             }
         }ms")
         println("LMF bus removing: ${
             measureTimeMillis {
                 repeat(1_000) {
-                    lmfBus.unregister(this, 1)
+                    lmfBus.unregister(this)
                 }
             }
         }ms")

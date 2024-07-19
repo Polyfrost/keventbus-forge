@@ -15,10 +15,13 @@ class KEventBusTest {
         threadSafety { false }
     }
 
+    private var gui = GuiThatImplementsModernGui()
+
     @Test
     @Order(0)
     fun `subscribing class`() {
-        eventBus.register(this, 1)
+        eventBus.register(this)
+        eventBus.register(gui)
     }
 
     @SubscribeEvent
@@ -79,15 +82,24 @@ class KEventBusTest {
     @Test
     @Order(1)
     fun `posting event`() {
-        repeat(10_000_000) {
-            eventBus.post { MessageReceivedEvent("Hello world") }
-        }
+        eventBus.post { MessageReceivedEvent("Hello world") }
     }
 
     @Test
     @Order(2)
     fun `removing class`() {
-        eventBus.unregister(this, 1)
+        eventBus.unregister(this)
+        eventBus.unregister(gui)
+        eventBus.post { MessageReceivedEvent("Hello world") }
+    }
+
+    class GuiThatImplementsModernGui : ModernGui()
+
+    abstract class ModernGui {
+        @SubscribeEvent
+        fun `subscribed method thats inherited`(event: MessageReceivedEvent) {
+            println("Working (this shouldnt show twice)")
+        }
     }
 
 }

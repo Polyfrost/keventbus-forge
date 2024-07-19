@@ -101,7 +101,7 @@ class KEventBus @JvmOverloads constructor(
      */
     fun unregister(obj: Any) {
         val supers: Set<Class<*>?> = TypeToken.of(obj::class.java).getTypes().rawTypes()
-        val methods = obj.javaClass.declaredMethods
+        val methods = obj.javaClass.methods
         for (i in (methods.size - 1) downTo 0) {
             for (cls in supers) {
                 if (cls == null) continue
