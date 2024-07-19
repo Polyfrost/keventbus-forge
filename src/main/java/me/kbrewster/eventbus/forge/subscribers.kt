@@ -26,54 +26,6 @@ class SubscriberVoid(obj: Any, priority: EventPriority, private val invoker: Inv
     }
 }
 
-class SubscriberBoolean(obj: Any, priority: EventPriority, private val invoker: InvokerType.SubscriberMethodBoolean?) : Subscriber(obj, priority) {
-    override fun invoke(arg: Any?) {
-        invoker!!.invoke(arg)
-    }
-}
-
-class SubscriberInt(obj: Any, priority: EventPriority, private val invoker: InvokerType.SubscriberMethodInt?) : Subscriber(obj, priority) {
-    override fun invoke(arg: Any?) {
-        invoker!!.invoke(arg)
-    }
-}
-
-class SubscriberFloat(obj: Any, priority: EventPriority, private val invoker: InvokerType.SubscriberMethodFloat?) : Subscriber(obj, priority) {
-    override fun invoke(arg: Any?) {
-        invoker!!.invoke(arg)
-    }
-}
-
-class SubscriberDouble(obj: Any, priority: EventPriority, private val invoker: InvokerType.SubscriberMethodDouble?) : Subscriber(obj, priority) {
-    override fun invoke(arg: Any?) {
-        invoker!!.invoke(arg)
-    }
-}
-
-class SubscriberLong(obj: Any, priority: EventPriority, private val invoker: InvokerType.SubscriberMethodLong?) : Subscriber(obj, priority) {
-    override fun invoke(arg: Any?) {
-        invoker!!.invoke(arg)
-    }
-}
-
-class SubscriberShort(obj: Any, priority: EventPriority, private val invoker: InvokerType.SubscriberMethodShort?) : Subscriber(obj, priority) {
-    override fun invoke(arg: Any?) {
-        invoker!!.invoke(arg)
-    }
-}
-
-class SubscriberByte(obj: Any, priority: EventPriority, private val invoker: InvokerType.SubscriberMethodByte?) : Subscriber(obj, priority) {
-    override fun invoke(arg: Any?) {
-        invoker!!.invoke(arg)
-    }
-}
-
-class SubscriberChar(obj: Any, priority: EventPriority, private val invoker: InvokerType.SubscriberMethodChar?) : Subscriber(obj, priority) {
-    override fun invoke(arg: Any?) {
-        invoker!!.invoke(arg)
-    }
-}
-
 class SubscriberObject(obj: Any, priority: EventPriority, private val invoker: InvokerType.SubscriberMethodObject?) : Subscriber(obj, priority) {
     override fun invoke(arg: Any?) {
         invoker!!.invoke(arg)

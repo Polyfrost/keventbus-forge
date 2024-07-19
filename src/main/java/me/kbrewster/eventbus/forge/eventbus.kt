@@ -5,15 +5,7 @@ import me.kbrewster.eventbus.forge.collection.SubscriberArrayList
 import me.kbrewster.eventbus.forge.exception.ExceptionHandler
 import me.kbrewster.eventbus.forge.invokers.InvokerType
 import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethod
-import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodBoolean
-import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodByte
-import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodChar
-import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodDouble
-import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodFloat
-import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodInt
-import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodLong
 import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodObject
-import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodShort
 import me.kbrewster.eventbus.forge.invokers.ReflectionInvoker
 import net.minecraftforge.fml.common.eventhandler.EventPriority
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
@@ -65,14 +57,6 @@ class KEventBus @JvmOverloads constructor(
 
             val subscriber = when (subscriberMethod) {
                 is SubscriberMethod -> SubscriberVoid(obj, sub.priority, subscriberMethod)
-                is SubscriberMethodBoolean -> SubscriberBoolean(obj, sub.priority, subscriberMethod)
-                is SubscriberMethodInt -> SubscriberInt(obj, sub.priority, subscriberMethod)
-                is SubscriberMethodFloat -> SubscriberFloat(obj, sub.priority, subscriberMethod)
-                is SubscriberMethodDouble -> SubscriberDouble(obj, sub.priority, subscriberMethod)
-                is SubscriberMethodLong -> SubscriberLong(obj, sub.priority, subscriberMethod)
-                is SubscriberMethodShort -> SubscriberShort(obj, sub.priority, subscriberMethod)
-                is SubscriberMethodByte -> SubscriberByte(obj, sub.priority, subscriberMethod)
-                is SubscriberMethodChar -> SubscriberChar(obj, sub.priority, subscriberMethod)
                 is SubscriberMethodObject -> SubscriberObject(obj, sub.priority, subscriberMethod)
                 else -> throw IllegalArgumentException("Invalid subscriber method")
             }
