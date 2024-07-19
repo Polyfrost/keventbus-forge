@@ -24,7 +24,8 @@ class KEventBus @JvmOverloads constructor(
             throw exception
         }
     },
-    private val threadSafety: Boolean = true
+    private val threadSafety: Boolean = true, // set to false in forge
+    private val busId: Int = 0
 ) {
 
     private val subscribers: AbstractMap<Class<*>, MutableList<Subscriber>> =
@@ -44,7 +45,7 @@ class KEventBus @JvmOverloads constructor(
      * }
      *
      */
-    fun register(obj: Any, busId: Int) {
+    fun register(obj: Any) {
         val supers: Set<Class<*>?> = TypeToken.of(obj::class.java).getTypes().rawTypes()
         val methods = obj.javaClass.methods
         for (i in (methods.size - 1) downTo 0) {
@@ -98,7 +99,7 @@ class KEventBus @JvmOverloads constructor(
     /**
      * Unsubscribes all `@Subscribe`'d methods inside of the `obj` instance.
      */
-    fun unregister(obj: Any, busId: Int) {
+    fun unregister(obj: Any) {
         val supers: Set<Class<*>?> = TypeToken.of(obj::class.java).getTypes().rawTypes()
         val methods = obj.javaClass.declaredMethods
         for (i in (methods.size - 1) downTo 0) {
