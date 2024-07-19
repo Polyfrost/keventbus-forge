@@ -1,7 +1,9 @@
 package me.kbrewster.eventbus.forge
 
 import me.kbrewster.eventbus.forge.invokers.InvokerType
+import net.minecraftforge.fml.common.eventhandler.Event
 import net.minecraftforge.fml.common.eventhandler.EventPriority
+import net.minecraftforge.fml.common.eventhandler.IEventListener
 
 open class Subscriber(private val obj: Any, val priority: EventPriority) {
 
@@ -29,5 +31,20 @@ class SubscriberVoid(obj: Any, priority: EventPriority, private val invoker: Inv
 class SubscriberObject(obj: Any, priority: EventPriority, private val invoker: InvokerType.SubscriberMethodObject?) : Subscriber(obj, priority) {
     override fun invoke(arg: Any?) {
         invoker!!.invoke(arg)
+    }
+}
+
+class SubscriberFMLEventListener(private val subscriber: Subscriber) : IEventListener {
+
+    override fun invoke(event: Event) {
+        subscriber.invoke(event)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other.hashCode() == this.hashCode()
+    }
+
+    override fun hashCode(): Int {
+        return subscriber.hashCode()
     }
 }

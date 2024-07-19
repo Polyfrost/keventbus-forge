@@ -18,7 +18,7 @@ class KEventBusTest {
     @Test
     @Order(0)
     fun `subscribing class`() {
-        eventBus.register(this)
+        eventBus.register(this, 1)
     }
 
     @SubscribeEvent
@@ -87,7 +87,7 @@ class KEventBusTest {
     @Test
     @Order(2)
     fun `removing class`() {
-        eventBus.unregister(this)
+        eventBus.unregister(this, 1)
     }
 
 }

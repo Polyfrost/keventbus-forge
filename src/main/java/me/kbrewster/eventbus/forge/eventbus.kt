@@ -7,6 +7,7 @@ import me.kbrewster.eventbus.forge.invokers.InvokerType
 import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethod
 import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodObject
 import me.kbrewster.eventbus.forge.invokers.ReflectionInvoker
+import net.minecraftforge.fml.common.eventhandler.Event
 import net.minecraftforge.fml.common.eventhandler.EventPriority
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import java.lang.reflect.Modifier
@@ -26,6 +27,9 @@ class KEventBus @JvmOverloads constructor(
     private val subscribers: AbstractMap<Class<*>, MutableList<Subscriber>> =
         if (threadSafety) ConcurrentHashMap() else HashMap()
 
+    private val cachedEvents: AbstractMap<Class<*>, Event> =
+        if (threadSafety) ConcurrentHashMap() else HashMap()
+
     /**
      * Subscribes all of the methods marked with the `@Subscribe` annotation
      * within the `obj` instance provided to th methods first parameter class
@@ -37,7 +41,7 @@ class KEventBus @JvmOverloads constructor(
      * }
      *
      */
-    fun register(obj: Any) {
+    fun register(obj: Any, busId: Int) {
         val methods = obj.javaClass.declaredMethods
         for (i in (methods.size - 1) downTo 0) {
             val method = methods[i]
@@ -65,20 +69,34 @@ class KEventBus @JvmOverloads constructor(
                 if (threadSafety) ConcurrentSubscriberArrayList() else SubscriberArrayList()
             )
             subscribers[parameterClazz]!!.add(subscriber)
+            if (parameterClazz.isAssignableFrom(Event::class.java)) {
+                val event = cachedEvents.putIfAbsent(parameterClazz, parameterClazz.getConstructor().also { it.isAccessible = true }.newInstance() as Event)
+                event!!.listenerList.register(
+                    busId,
+                    subscriber.priority,
+                    SubscriberFMLEventListener(subscriber)
+                )
+            }
         }
     }
 
     /**
      * Unsubscribes all `@Subscribe`'d methods inside of the `obj` instance.
      */
-    fun unregister(obj: Any) {
+    fun unregister(obj: Any, busId: Int) {
         val methods = obj.javaClass.declaredMethods
         for (i in (methods.size - 1) downTo 0) {
             val method = methods[i]
             if (method.getAnnotation(SubscribeEvent::class.java) == null) {
                 continue
             }
-            subscribers[method.parameterTypes[0]]?.remove(if (method.returnType == Void.TYPE) SubscriberVoid(obj, EventPriority.LOWEST, null) else SubscriberObject(obj, EventPriority.LOWEST, null))
+            val subscriber = if (method.returnType == Void.TYPE) SubscriberVoid(obj, EventPriority.LOWEST, null) else SubscriberObject(obj, EventPriority.LOWEST, null)
+            val parameterClazz = method.parameterTypes[0]
+            subscribers[parameterClazz]?.remove(subscriber)
+            if (parameterClazz.isAssignableFrom(Event::class.java)) {
+                val event = cachedEvents.putIfAbsent(parameterClazz, parameterClazz.getConstructor().also { it.isAccessible = true }.newInstance() as Event)
+                event?.listenerList?.unregister(busId, SubscriberFMLEventListener(subscriber))
+            }
         }
     }
 
