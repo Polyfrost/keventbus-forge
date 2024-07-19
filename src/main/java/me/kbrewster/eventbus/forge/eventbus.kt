@@ -1,5 +1,6 @@
 package me.kbrewster.eventbus.forge
 
+import com.google.common.reflect.TypeToken
 import me.kbrewster.eventbus.forge.collection.ConcurrentSubscriberArrayList
 import me.kbrewster.eventbus.forge.collection.SubscriberArrayList
 import me.kbrewster.eventbus.forge.exception.ExceptionHandler
@@ -42,40 +43,51 @@ class KEventBus @JvmOverloads constructor(
      *
      */
     fun register(obj: Any, busId: Int) {
-        val methods = obj.javaClass.declaredMethods
+        val supers: Set<Class<*>?> = TypeToken.of(obj::class.java).getTypes().rawTypes()
+        val methods = obj.javaClass.methods
         for (i in (methods.size - 1) downTo 0) {
-            val method = methods[i]
-            val sub: SubscribeEvent = method.getAnnotation(SubscribeEvent::class.java) ?: continue
+            for (clsI in (supers.size - 1) downTo 0) {
+                val cls = supers.elementAt(clsI) ?: continue
+                val method = try {
+                    cls.getDeclaredMethod(methods[i].name, *methods[i].parameterTypes)
+                } catch (e: NoSuchMethodException) {
+                    continue
+                }
 
-            // verification
-            val parameterClazz = method.parameterTypes[0]
-            when {
-                method.parameterCount != 1 -> throw IllegalArgumentException("Subscribed method must only have one parameter.")
-                parameterClazz.isPrimitive -> throw IllegalArgumentException("Cannot subscribe method to a primitive.")
-                parameterClazz.modifiers and (Modifier.ABSTRACT or Modifier.INTERFACE) != 0 -> throw IllegalArgumentException(
-                    "Cannot subscribe method to a polymorphic class."
+                val sub: SubscribeEvent = method.getAnnotation(SubscribeEvent::class.java) ?: continue
+
+                // verification
+                val parameterClazz = method.parameterTypes[0]
+                when {
+                    method.parameterCount != 1 -> throw IllegalArgumentException("Subscribed method must only have one parameter.")
+                    parameterClazz.isPrimitive -> throw IllegalArgumentException("Cannot subscribe method to a primitive.")
+                    parameterClazz.modifiers and (Modifier.ABSTRACT or Modifier.INTERFACE) != 0 -> throw IllegalArgumentException(
+                        "Cannot subscribe method to a polymorphic class."
+                    )
+                }
+
+                val subscriberMethod = invokerType.setup(obj, obj.javaClass, parameterClazz, method)
+
+                val subscriber = when (subscriberMethod) {
+                    is SubscriberMethod -> SubscriberVoid(obj, sub.priority, subscriberMethod)
+                    is SubscriberMethodObject -> SubscriberObject(obj, sub.priority, subscriberMethod)
+                    else -> throw IllegalArgumentException("Invalid subscriber method")
+                }
+                subscribers.putIfAbsent(
+                    parameterClazz,
+                    if (threadSafety) ConcurrentSubscriberArrayList() else SubscriberArrayList()
                 )
-            }
-
-            val subscriberMethod = invokerType.setup(obj, obj.javaClass, parameterClazz, method)
-
-            val subscriber = when (subscriberMethod) {
-                is SubscriberMethod -> SubscriberVoid(obj, sub.priority, subscriberMethod)
-                is SubscriberMethodObject -> SubscriberObject(obj, sub.priority, subscriberMethod)
-                else -> throw IllegalArgumentException("Invalid subscriber method")
-            }
-            subscribers.putIfAbsent(
-                parameterClazz,
-                if (threadSafety) ConcurrentSubscriberArrayList() else SubscriberArrayList()
-            )
-            subscribers[parameterClazz]!!.add(subscriber)
-            if (parameterClazz.isAssignableFrom(Event::class.java)) {
-                val event = cachedEvents.putIfAbsent(parameterClazz, parameterClazz.getConstructor().also { it.isAccessible = true }.newInstance() as Event)
-                event!!.listenerList.register(
-                    busId,
-                    subscriber.priority,
-                    SubscriberFMLEventListener(subscriber)
-                )
+                subscribers[parameterClazz]!!.add(subscriber)
+                if (Event::class.java.isAssignableFrom(parameterClazz)) {
+                    val constructor = parameterClazz.getConstructor()
+                    constructor.isAccessible = true
+                    val event = cachedEvents.getOrPut(parameterClazz) { constructor.newInstance() as Event }
+                    event!!.listenerList.register(
+                        busId,
+                        subscriber.priority,
+                        SubscriberFMLEventListener(subscriber)
+                    )
+                }
             }
         }
     }
@@ -84,18 +96,28 @@ class KEventBus @JvmOverloads constructor(
      * Unsubscribes all `@Subscribe`'d methods inside of the `obj` instance.
      */
     fun unregister(obj: Any, busId: Int) {
+        val supers: Set<Class<*>?> = TypeToken.of(obj::class.java).getTypes().rawTypes()
         val methods = obj.javaClass.declaredMethods
         for (i in (methods.size - 1) downTo 0) {
-            val method = methods[i]
-            if (method.getAnnotation(SubscribeEvent::class.java) == null) {
-                continue
-            }
-            val subscriber = if (method.returnType == Void.TYPE) SubscriberVoid(obj, EventPriority.LOWEST, null) else SubscriberObject(obj, EventPriority.LOWEST, null)
-            val parameterClazz = method.parameterTypes[0]
-            subscribers[parameterClazz]?.remove(subscriber)
-            if (parameterClazz.isAssignableFrom(Event::class.java)) {
-                val event = cachedEvents.putIfAbsent(parameterClazz, parameterClazz.getConstructor().also { it.isAccessible = true }.newInstance() as Event)
-                event?.listenerList?.unregister(busId, SubscriberFMLEventListener(subscriber))
+            for (clsI in (supers.size - 1) downTo 0) {
+                val cls = supers.elementAt(clsI) ?: continue
+                val method = try {
+                    cls.getDeclaredMethod(methods[i].name, *methods[i].parameterTypes)
+                } catch (e: NoSuchMethodException) {
+                    continue
+                }
+                if (method.getAnnotation(SubscribeEvent::class.java) == null) {
+                    continue
+                }
+                val subscriber = if (method.returnType == Void.TYPE) SubscriberVoid(obj, EventPriority.LOWEST, null) else SubscriberObject(obj, EventPriority.LOWEST, null)
+                val parameterClazz = method.parameterTypes[0]
+                subscribers[parameterClazz]?.remove(subscriber)
+                if (Event::class.java.isAssignableFrom(parameterClazz)) {
+                    val constructor = parameterClazz.getConstructor()
+                    constructor.isAccessible = true
+                    val event = cachedEvents.getOrPut(parameterClazz) { constructor.newInstance() as Event }
+                    event?.listenerList?.unregister(busId, SubscriberFMLEventListener(subscriber))
+                }
             }
         }
     }

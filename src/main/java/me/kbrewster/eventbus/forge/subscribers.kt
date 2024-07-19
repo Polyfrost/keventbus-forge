@@ -41,7 +41,7 @@ class SubscriberFMLEventListener(private val subscriber: Subscriber) : IEventLis
     }
 
     override fun equals(other: Any?): Boolean {
-        return other.hashCode() == this.hashCode()
+        return other is SubscriberFMLEventListener && other.hashCode() == this.hashCode()
     }
 
     override fun hashCode(): Int {
