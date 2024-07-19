@@ -25,9 +25,7 @@ public class LMFInvoker implements InvokerType {
                     subscription.changeParameterType(0, Object.class),
                     target,
                     subscription);
-            final MethodHandle factory = site.getTarget();
-            return (SubscriberMethod) factory.bindTo(object).invokeExact();
-        } else {
+        } else if (!returnType.isPrimitive()) {
             site = LambdaMetafactory.metafactory(
                     caller,
                     "invoke",
@@ -35,9 +33,76 @@ public class LMFInvoker implements InvokerType {
                     subscription.changeParameterType(0, Object.class),
                     target,
                     subscription);
-            final MethodHandle factory = site.getTarget();
-            return (SubscriberMethodObject) factory.bindTo(object).invokeExact();
+        } else if (returnType == boolean.class) { // Pain.
+            site = LambdaMetafactory.metafactory(
+                    caller,
+                    "invoke",
+                    MethodType.methodType(SubscriberMethodBoolean.class, clazz),
+                    subscription.changeParameterType(0, Object.class),
+                    target,
+                    subscription);
+        } else if (returnType == int.class) {
+            site = LambdaMetafactory.metafactory(
+                    caller,
+                    "invoke",
+                    MethodType.methodType(SubscriberMethodInt.class, clazz),
+                    subscription.changeParameterType(0, Object.class),
+                    target,
+                    subscription);
+        } else if (returnType == float.class) {
+            site = LambdaMetafactory.metafactory(
+                    caller,
+                    "invoke",
+                    MethodType.methodType(SubscriberMethodFloat.class, clazz),
+                    subscription.changeParameterType(0, Object.class),
+                    target,
+                    subscription);
+        } else if (returnType == double.class) {
+            site = LambdaMetafactory.metafactory(
+                    caller,
+                    "invoke",
+                    MethodType.methodType(SubscriberMethodDouble.class, clazz),
+                    subscription.changeParameterType(0, Object.class),
+                    target,
+                    subscription);
+        } else if (returnType == long.class) {
+            site = LambdaMetafactory.metafactory(
+                    caller,
+                    "invoke",
+                    MethodType.methodType(SubscriberMethodLong.class, clazz),
+                    subscription.changeParameterType(0, Object.class),
+                    target,
+                    subscription);
+        } else if (returnType == short.class) {
+            site = LambdaMetafactory.metafactory(
+                    caller,
+                    "invoke",
+                    MethodType.methodType(SubscriberMethodShort.class, clazz),
+                    subscription.changeParameterType(0, Object.class),
+                    target,
+                    subscription);
+        } else if (returnType == byte.class) {
+            site = LambdaMetafactory.metafactory(
+                    caller,
+                    "invoke",
+                    MethodType.methodType(SubscriberMethodByte.class, clazz),
+                    subscription.changeParameterType(0, Object.class),
+                    target,
+                    subscription);
+        } else if (returnType == char.class) {
+            site = LambdaMetafactory.metafactory(
+                    caller,
+                    "invoke",
+                    MethodType.methodType(SubscriberMethodChar.class, clazz),
+                    subscription.changeParameterType(0, Object.class),
+                    target,
+                    subscription);
+        } else {
+            throw new UnsupportedOperationException("Unsupported return type: " + returnType);
         }
+
+        final MethodHandle factory = site.getTarget();
+        return factory.bindTo(object).invoke();
     }
 
     private MethodHandles.Lookup lazyPrivateLookup(Class<?> clazz) throws Exception {

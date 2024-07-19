@@ -28,7 +28,48 @@ class KEventBusTest {
 
     @SubscribeEvent
     fun `subscribed method except its an object`(event: MessageReceivedEvent): Any {
+        return Any()
+    }
+
+    @SubscribeEvent
+    fun `subscribed method except its an int`(event: MessageReceivedEvent): Int {
         return 0
+    }
+
+    @SubscribeEvent
+    fun `subscribed method except its a boolean`(event: MessageReceivedEvent): Boolean {
+        return false
+    }
+
+    @SubscribeEvent
+    fun `subscribed method except its a float`(event: MessageReceivedEvent): Float {
+        return 0.0f
+    }
+
+    @SubscribeEvent
+    fun `subscribed method except its a double`(event: MessageReceivedEvent): Double {
+        return 0.0
+    }
+
+    @SubscribeEvent
+    fun `subscribed method except its a long`(event: MessageReceivedEvent): Long {
+        return 0L
+    }
+
+    @SubscribeEvent
+    fun `subscribed method except its a short`(event: MessageReceivedEvent): Short {
+        return 0
+    }
+
+    @SubscribeEvent
+    fun `subscribed method except its a byte`(event: MessageReceivedEvent): Byte {
+        println("Hello")
+        return 0
+    }
+
+    @SubscribeEvent
+    fun `subscribed method except its a char`(event: MessageReceivedEvent): Char {
+        return 'a'
     }
 
     @Test

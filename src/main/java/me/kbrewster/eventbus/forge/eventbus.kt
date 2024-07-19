@@ -5,7 +5,15 @@ import me.kbrewster.eventbus.forge.collection.SubscriberArrayList
 import me.kbrewster.eventbus.forge.exception.ExceptionHandler
 import me.kbrewster.eventbus.forge.invokers.InvokerType
 import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethod
+import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodBoolean
+import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodByte
+import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodChar
+import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodDouble
+import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodFloat
+import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodInt
+import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodLong
 import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodObject
+import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodShort
 import me.kbrewster.eventbus.forge.invokers.ReflectionInvoker
 import net.minecraftforge.fml.common.eventhandler.EventPriority
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
@@ -22,35 +30,6 @@ class KEventBus @JvmOverloads constructor(
     },
     private val threadSafety: Boolean = true
 ) {
-
-    open class Subscriber(private val obj: Any, val priority: EventPriority) {
-
-        @Throws(Exception::class)
-        open operator fun invoke(arg: Any?) {
-            throw UnsupportedOperationException("This method should be overridden")
-        }
-
-        override fun equals(other: Any?): Boolean {
-            return other.hashCode() == this.hashCode()
-        }
-
-        override fun hashCode(): Int {
-            return obj.hashCode()
-        }
-
-    }
-
-    class SubscriberVoid(obj: Any, priority: EventPriority, private val invoker: SubscriberMethod?) : Subscriber(obj, priority) {
-        override fun invoke(arg: Any?) {
-            invoker!!.invoke(arg)
-        }
-    }
-
-    class SubscriberObject(obj: Any, priority: EventPriority, private val invoker: SubscriberMethodObject?) : Subscriber(obj, priority) {
-        override fun invoke(arg: Any?) {
-            invoker!!.invoke(arg)
-        }
-    }
 
     private val subscribers: AbstractMap<Class<*>, MutableList<Subscriber>> =
         if (threadSafety) ConcurrentHashMap() else HashMap()
@@ -76,9 +55,6 @@ class KEventBus @JvmOverloads constructor(
             val parameterClazz = method.parameterTypes[0]
             when {
                 method.parameterCount != 1 -> throw IllegalArgumentException("Subscribed method must only have one parameter.")
-                method.returnType.isPrimitive && method.returnType != Void.TYPE -> throw IllegalArgumentException(
-                    "Cannot subscribe method with a primitive return type."
-                )
                 parameterClazz.isPrimitive -> throw IllegalArgumentException("Cannot subscribe method to a primitive.")
                 parameterClazz.modifiers and (Modifier.ABSTRACT or Modifier.INTERFACE) != 0 -> throw IllegalArgumentException(
                     "Cannot subscribe method to a polymorphic class."
@@ -89,6 +65,14 @@ class KEventBus @JvmOverloads constructor(
 
             val subscriber = when (subscriberMethod) {
                 is SubscriberMethod -> SubscriberVoid(obj, sub.priority, subscriberMethod)
+                is SubscriberMethodBoolean -> SubscriberBoolean(obj, sub.priority, subscriberMethod)
+                is SubscriberMethodInt -> SubscriberInt(obj, sub.priority, subscriberMethod)
+                is SubscriberMethodFloat -> SubscriberFloat(obj, sub.priority, subscriberMethod)
+                is SubscriberMethodDouble -> SubscriberDouble(obj, sub.priority, subscriberMethod)
+                is SubscriberMethodLong -> SubscriberLong(obj, sub.priority, subscriberMethod)
+                is SubscriberMethodShort -> SubscriberShort(obj, sub.priority, subscriberMethod)
+                is SubscriberMethodByte -> SubscriberByte(obj, sub.priority, subscriberMethod)
+                is SubscriberMethodChar -> SubscriberChar(obj, sub.priority, subscriberMethod)
                 is SubscriberMethodObject -> SubscriberObject(obj, sub.priority, subscriberMethod)
                 else -> throw IllegalArgumentException("Invalid subscriber method")
             }
