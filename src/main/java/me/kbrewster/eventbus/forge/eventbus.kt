@@ -4,6 +4,8 @@ import me.kbrewster.eventbus.forge.collection.ConcurrentSubscriberArrayList
 import me.kbrewster.eventbus.forge.collection.SubscriberArrayList
 import me.kbrewster.eventbus.forge.exception.ExceptionHandler
 import me.kbrewster.eventbus.forge.invokers.InvokerType
+import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethod
+import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodObject
 import me.kbrewster.eventbus.forge.invokers.ReflectionInvoker
 import net.minecraftforge.fml.common.eventhandler.EventPriority
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
@@ -21,11 +23,11 @@ class KEventBus @JvmOverloads constructor(
     private val threadSafety: Boolean = true
 ) {
 
-    class Subscriber(private val obj: Any, val priority: EventPriority, private val invoker: InvokerType.SubscriberMethod?) {
+    open class Subscriber(private val obj: Any, val priority: EventPriority) {
 
         @Throws(Exception::class)
-        operator fun invoke(arg: Any?) {
-            invoker!!.invoke(arg)
+        open operator fun invoke(arg: Any?) {
+            throw UnsupportedOperationException("This method should be overridden")
         }
 
         override fun equals(other: Any?): Boolean {
@@ -36,6 +38,18 @@ class KEventBus @JvmOverloads constructor(
             return obj.hashCode()
         }
 
+    }
+
+    class SubscriberVoid(obj: Any, priority: EventPriority, private val invoker: SubscriberMethod?) : Subscriber(obj, priority) {
+        override fun invoke(arg: Any?) {
+            invoker!!.invoke(arg)
+        }
+    }
+
+    class SubscriberObject(obj: Any, priority: EventPriority, private val invoker: SubscriberMethodObject?) : Subscriber(obj, priority) {
+        override fun invoke(arg: Any?) {
+            invoker!!.invoke(arg)
+        }
     }
 
     private val subscribers: AbstractMap<Class<*>, MutableList<Subscriber>> =
@@ -62,7 +76,9 @@ class KEventBus @JvmOverloads constructor(
             val parameterClazz = method.parameterTypes[0]
             when {
                 method.parameterCount != 1 -> throw IllegalArgumentException("Subscribed method must only have one parameter.")
-                method.returnType != Void.TYPE -> throw IllegalArgumentException("Subscribed method must be of type 'Void'. ")
+                method.returnType.isPrimitive && method.returnType != Void.TYPE -> throw IllegalArgumentException(
+                    "Cannot subscribe method with a primitive return type."
+                )
                 parameterClazz.isPrimitive -> throw IllegalArgumentException("Cannot subscribe method to a primitive.")
                 parameterClazz.modifiers and (Modifier.ABSTRACT or Modifier.INTERFACE) != 0 -> throw IllegalArgumentException(
                     "Cannot subscribe method to a polymorphic class."
@@ -71,7 +87,11 @@ class KEventBus @JvmOverloads constructor(
 
             val subscriberMethod = invokerType.setup(obj, obj.javaClass, parameterClazz, method)
 
-            val subscriber = Subscriber(obj, sub.priority, subscriberMethod)
+            val subscriber = when (subscriberMethod) {
+                is SubscriberMethod -> SubscriberVoid(obj, sub.priority, subscriberMethod)
+                is SubscriberMethodObject -> SubscriberObject(obj, sub.priority, subscriberMethod)
+                else -> throw IllegalArgumentException("Invalid subscriber method")
+            }
             subscribers.putIfAbsent(
                 parameterClazz,
                 if (threadSafety) ConcurrentSubscriberArrayList() else SubscriberArrayList()
@@ -90,7 +110,7 @@ class KEventBus @JvmOverloads constructor(
             if (method.getAnnotation(SubscribeEvent::class.java) == null) {
                 continue
             }
-            subscribers[method.parameterTypes[0]]?.remove(Subscriber(obj, EventPriority.LOWEST, null))
+            subscribers[method.parameterTypes[0]]?.remove(if (method.returnType == Void.TYPE) SubscriberVoid(obj, EventPriority.LOWEST, null) else SubscriberObject(obj, EventPriority.LOWEST, null))
         }
     }
 

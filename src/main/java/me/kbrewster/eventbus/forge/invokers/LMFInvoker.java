@@ -10,22 +10,34 @@ public class LMFInvoker implements InvokerType {
 
     private MethodLookup lookup;
 
-    public SubscriberMethod setup(Object object, Class<?> clazz, Class<?> parameterClazz, Method method) throws Throwable {
+    public Object setup(Object object, Class<?> clazz, Class<?> parameterClazz, Method method) throws Throwable {
         method.setAccessible(true);
+        Class<?> returnType = method.getReturnType();
         final MethodHandles.Lookup caller = lazyPrivateLookup(clazz);
-        final MethodType subscription = MethodType.methodType(void.class, parameterClazz);
+        final MethodType subscription = MethodType.methodType(returnType, parameterClazz);
         final MethodHandle target = caller.findVirtual(clazz, method.getName(), subscription);
-        final CallSite site = LambdaMetafactory.metafactory(
-                caller,
-                "invoke",
-                MethodType.methodType(SubscriberMethod.class, clazz),
-                subscription.changeParameterType(0, Object.class),
-                target,
-                subscription);
-
-        final MethodHandle factory = site.getTarget();
-        return (SubscriberMethod) factory.bindTo(object).invokeExact();
-
+        final CallSite site;
+        if (returnType == void.class) {
+            site = LambdaMetafactory.metafactory(
+                    caller,
+                    "invoke",
+                    MethodType.methodType(SubscriberMethod.class, clazz),
+                    subscription.changeParameterType(0, Object.class),
+                    target,
+                    subscription);
+            final MethodHandle factory = site.getTarget();
+            return (SubscriberMethod) factory.bindTo(object).invokeExact();
+        } else {
+            site = LambdaMetafactory.metafactory(
+                    caller,
+                    "invoke",
+                    MethodType.methodType(SubscriberMethodObject.class, clazz),
+                    subscription.changeParameterType(0, Object.class),
+                    target,
+                    subscription);
+            final MethodHandle factory = site.getTarget();
+            return (SubscriberMethodObject) factory.bindTo(object).invokeExact();
+        }
     }
 
     private MethodHandles.Lookup lazyPrivateLookup(Class<?> clazz) throws Exception {

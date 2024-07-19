@@ -26,6 +26,11 @@ class KEventBusTest {
         // do something
     }
 
+    @SubscribeEvent
+    fun `subscribed method except its an object`(event: MessageReceivedEvent): Any {
+        return 0
+    }
+
     @Test
     @Order(1)
     fun `posting event`() {
