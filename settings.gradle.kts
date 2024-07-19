@@ -7,4 +7,4 @@ pluginManagement {
 }
 
 
-rootProject.name = "KeventBus"
+rootProject.name = "keventbus-forge"

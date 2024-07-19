@@ -4,9 +4,11 @@ import com.google.common.reflect.TypeToken
 import me.kbrewster.eventbus.forge.collection.ConcurrentSubscriberArrayList
 import me.kbrewster.eventbus.forge.collection.SubscriberArrayList
 import me.kbrewster.eventbus.forge.exception.ExceptionHandler
+import me.kbrewster.eventbus.forge.invokers.DirectInvoker
 import me.kbrewster.eventbus.forge.invokers.InvokerType
 import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethod
 import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodObject
+import me.kbrewster.eventbus.forge.invokers.InvokerType.SubscriberMethodParent
 import me.kbrewster.eventbus.forge.invokers.ReflectionInvoker
 import net.minecraftforge.fml.common.eventhandler.Event
 import net.minecraftforge.fml.common.eventhandler.EventPriority
@@ -46,8 +48,8 @@ class KEventBus @JvmOverloads constructor(
         val supers: Set<Class<*>?> = TypeToken.of(obj::class.java).getTypes().rawTypes()
         val methods = obj.javaClass.methods
         for (i in (methods.size - 1) downTo 0) {
-            for (clsI in (supers.size - 1) downTo 0) {
-                val cls = supers.elementAt(clsI) ?: continue
+            for (cls in supers) {
+                if (cls == null) continue
                 val method = try {
                     cls.getDeclaredMethod(methods[i].name, *methods[i].parameterTypes)
                 } catch (e: NoSuchMethodException) {
@@ -70,6 +72,7 @@ class KEventBus @JvmOverloads constructor(
 
                 val subscriber = when (subscriberMethod) {
                     is SubscriberMethod -> SubscriberVoid(obj, sub.priority, subscriberMethod)
+                    is SubscriberMethodParent -> SubscriberVoidParent(obj, sub.priority, subscriberMethod)
                     is SubscriberMethodObject -> SubscriberObject(obj, sub.priority, subscriberMethod)
                     else -> throw IllegalArgumentException("Invalid subscriber method")
                 }
@@ -99,8 +102,8 @@ class KEventBus @JvmOverloads constructor(
         val supers: Set<Class<*>?> = TypeToken.of(obj::class.java).getTypes().rawTypes()
         val methods = obj.javaClass.declaredMethods
         for (i in (methods.size - 1) downTo 0) {
-            for (clsI in (supers.size - 1) downTo 0) {
-                val cls = supers.elementAt(clsI) ?: continue
+            for (cls in supers) {
+                if (cls == null) continue
                 val method = try {
                     cls.getDeclaredMethod(methods[i].name, *methods[i].parameterTypes)
                 } catch (e: NoSuchMethodException) {
@@ -109,7 +112,7 @@ class KEventBus @JvmOverloads constructor(
                 if (method.getAnnotation(SubscribeEvent::class.java) == null) {
                     continue
                 }
-                val subscriber = if (method.returnType == Void.TYPE) SubscriberVoid(obj, EventPriority.LOWEST, null) else SubscriberObject(obj, EventPriority.LOWEST, null)
+                val subscriber = if (method.returnType == Void.TYPE) if (invokerType is DirectInvoker) SubscriberVoidParent(obj, EventPriority.LOWEST, null) else SubscriberVoid(obj, EventPriority.LOWEST, null) else SubscriberObject(obj, EventPriority.LOWEST, null)
                 val parameterClazz = method.parameterTypes[0]
                 subscribers[parameterClazz]?.remove(subscriber)
                 if (Event::class.java.isAssignableFrom(parameterClazz)) {

@@ -13,6 +13,12 @@ public interface InvokerType {
     }
 
     @FunctionalInterface
+    interface SubscriberMethodParent
+    {
+        void invoke(Object event, Object parent) throws Exception;
+    }
+
+    @FunctionalInterface
     interface SubscriberMethodObject
     {
         Object invoke(Object event) throws Exception;

@@ -1,5 +1,5 @@
 import me.kbrewster.eventbus.forge.eventbus
-import me.kbrewster.eventbus.forge.invokers.LMFInvoker
+import me.kbrewster.eventbus.forge.invokers.DirectInvoker
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import org.junit.jupiter.api.*
 
@@ -10,7 +10,7 @@ class MessageReceivedEvent(val message: String)
 class KEventBusTest {
 
     private val eventBus = eventbus {
-        invoker { LMFInvoker() }
+        invoker { DirectInvoker() }
         exceptionHandler { exception -> println("Error occurred in method: ${exception.message}")  }
         threadSafety { false }
     }

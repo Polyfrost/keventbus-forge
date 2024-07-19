@@ -5,7 +5,7 @@ import net.minecraftforge.fml.common.eventhandler.Event
 import net.minecraftforge.fml.common.eventhandler.EventPriority
 import net.minecraftforge.fml.common.eventhandler.IEventListener
 
-open class Subscriber(private val obj: Any, val priority: EventPriority) {
+open class Subscriber(protected val obj: Any, val priority: EventPriority) {
 
     @Throws(Exception::class)
     open operator fun invoke(arg: Any?) {
@@ -25,6 +25,12 @@ open class Subscriber(private val obj: Any, val priority: EventPriority) {
 class SubscriberVoid(obj: Any, priority: EventPriority, private val invoker: InvokerType.SubscriberMethod?) : Subscriber(obj, priority) {
     override fun invoke(arg: Any?) {
         invoker!!.invoke(arg)
+    }
+}
+
+class SubscriberVoidParent(obj: Any, priority: EventPriority, private val invoker: InvokerType.SubscriberMethodParent?) : Subscriber(obj, priority) {
+    override fun invoke(arg: Any?) {
+        invoker!!.invoke(arg, obj)
     }
 }
 

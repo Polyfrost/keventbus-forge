@@ -3,6 +3,7 @@ plugins {
     id("org.polyfrost.loom") version "1.6.polyfrost.5"
     id("dev.architectury.architectury-pack200") version "0.1.3"
     java
+    id("org.polyfrost.defaults.maven-publish") version "0.6.5"
     id("maven-publish")
 }
 
@@ -63,12 +64,4 @@ tasks.named<Test>("test") {
 
 tasks.withType(JavaCompile::class) {
     options.encoding = "UTF-8"
-}
-
-publishing {
-    publications {
-        register<MavenPublication>("maven") {
-            from(components.getByName("java"))
-        }
-    }
 }
