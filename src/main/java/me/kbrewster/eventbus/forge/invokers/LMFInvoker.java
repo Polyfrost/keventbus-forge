@@ -30,7 +30,7 @@ public class LMFInvoker implements InvokerType {
                     caller,
                     "invoke",
                     MethodType.methodType(SubscriberMethodObject.class, clazz),
-                    subscription.changeParameterType(0, Object.class),
+                    subscription.changeParameterType(0, Object.class).changeReturnType(Object.class),
                     target,
                     subscription);
         } else if (returnType == boolean.class) { // Pain.

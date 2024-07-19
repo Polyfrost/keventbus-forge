@@ -32,6 +32,11 @@ class KEventBusTest {
     }
 
     @SubscribeEvent
+    fun `subscribed method except its a class that extends Any`(event: MessageReceivedEvent): String {
+        return ""
+    }
+
+    @SubscribeEvent
     fun `subscribed method except its an int`(event: MessageReceivedEvent): Int {
         return 0
     }
@@ -63,7 +68,6 @@ class KEventBusTest {
 
     @SubscribeEvent
     fun `subscribed method except its a byte`(event: MessageReceivedEvent): Byte {
-        println("Hello")
         return 0
     }
 
