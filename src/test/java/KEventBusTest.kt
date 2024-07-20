@@ -1,5 +1,6 @@
 import me.kbrewster.eventbus.forge.eventbus
 import me.kbrewster.eventbus.forge.invokers.DirectInvoker
+import net.minecraftforge.fml.common.eventhandler.EventPriority
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import org.junit.jupiter.api.*
 
@@ -27,6 +28,31 @@ class KEventBusTest {
     @SubscribeEvent
     fun `subscribed method`(event: MessageReceivedEvent) {
         // do something
+    }
+
+    @SubscribeEvent
+    fun `subscribed method with inputevent`(event: InputEvent) {
+        println("This should call, regardless of whether I've used KeyInputEvent or MouseInputEvent")
+        when (event) {
+            is InputEvent.KeyInputEvent -> println("KeyInputEvent")
+            is InputEvent.MouseInputEvent -> println("MouseInputEvent")
+        }
+    }
+
+    @SubscribeEvent
+    fun `subscribed method with keyinputevent`(event: InputEvent.KeyInputEvent) {
+        println("This should call, only when I've used KeyInputEvent")
+    }
+
+    @SubscribeEvent
+    fun `subscribed method with mouseinputevent`(event: InputEvent.MouseInputEvent) {
+        println("This should call, only when I've used MouseInputEvent")
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    fun `subscribed method except i run last`(event: MessageReceivedEvent): Char {
+        println("3")
+        return 'a'
     }
 
     @SubscribeEvent
@@ -76,6 +102,13 @@ class KEventBusTest {
 
     @SubscribeEvent
     fun `subscribed method except its a char`(event: MessageReceivedEvent): Char {
+        println("2")
+        return 'a'
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    fun `subscribed method except i run first`(event: MessageReceivedEvent): Char {
+        println("1")
         return 'a'
     }
 
@@ -83,14 +116,32 @@ class KEventBusTest {
     @Order(1)
     fun `posting event`() {
         eventBus.post { MessageReceivedEvent("Hello world") }
+        eventBus.post(InputEvent.KeyInputEvent())
+        eventBus.post(InputEvent.MouseInputEvent())
+        eventBus.post(InputEvent.KeyInputEvent())
+        eventBus.post(InputEvent.MouseInputEvent())
     }
 
     @Test
     @Order(2)
     fun `removing class`() {
+        println("unregistering")
         eventBus.unregister(this)
         eventBus.unregister(gui)
         eventBus.post { MessageReceivedEvent("Hello world") }
+        eventBus.post(InputEvent.KeyInputEvent())
+        eventBus.post(InputEvent.MouseInputEvent())
+    }
+
+    @Test
+    @Order(3)
+    fun `reregistering class`() {
+        println("re-registering")
+        eventBus.register(this)
+        eventBus.register(gui)
+        eventBus.post { MessageReceivedEvent("Hello world") }
+        eventBus.post(InputEvent.KeyInputEvent())
+        eventBus.post(InputEvent.MouseInputEvent())
     }
 
     class GuiThatImplementsModernGui : ModernGui()

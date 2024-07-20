@@ -34,6 +34,9 @@ class KEventBus @JvmOverloads constructor(
     private val cachedEvents: AbstractMap<Class<*>, Event> =
         if (threadSafety) ConcurrentHashMap() else HashMap()
 
+    private val cachedSuperclasses: AbstractMap<Class<*>, MutableList<Subscriber>> =
+        if (threadSafety) ConcurrentHashMap() else HashMap()
+
     /**
      * Subscribes all of the methods marked with the `@Subscribe` annotation
      * within the `obj` instance provided to th methods first parameter class
@@ -72,9 +75,9 @@ class KEventBus @JvmOverloads constructor(
                 val subscriberMethod = invokerType.setup(obj, obj.javaClass, parameterClazz, method)
 
                 val subscriber = when (subscriberMethod) {
-                    is SubscriberMethod -> SubscriberVoid(obj, sub.priority, subscriberMethod)
-                    is SubscriberMethodParent -> SubscriberVoidParent(obj, sub.priority, subscriberMethod)
-                    is SubscriberMethodObject -> SubscriberObject(obj, sub.priority, subscriberMethod)
+                    is SubscriberMethod -> SubscriberVoid(obj, sub.priority, sub.receiveCanceled, subscriberMethod)
+                    is SubscriberMethodParent -> SubscriberVoidParent(obj, sub.priority, sub.receiveCanceled, subscriberMethod)
+                    is SubscriberMethodObject -> SubscriberObject(obj, sub.priority, sub.receiveCanceled, subscriberMethod)
                     else -> throw IllegalArgumentException("Invalid subscriber method")
                 }
                 subscribers.putIfAbsent(
@@ -91,6 +94,12 @@ class KEventBus @JvmOverloads constructor(
                         subscriber.priority,
                         SubscriberFMLEventListener(subscriber)
                     )
+                }
+
+                for (cached in cachedSuperclasses) {
+                    if (parameterClazz.isAssignableFrom(cached.key)) {
+                        cached.setValue(null) // clear cache
+                    }
                 }
             }
         }
@@ -113,7 +122,7 @@ class KEventBus @JvmOverloads constructor(
                 if (method.getAnnotation(SubscribeEvent::class.java) == null) {
                     continue
                 }
-                val subscriber = if (method.returnType == Void.TYPE) if (invokerType is DirectInvoker) SubscriberVoidParent(obj, EventPriority.LOWEST, null) else SubscriberVoid(obj, EventPriority.LOWEST, null) else SubscriberObject(obj, EventPriority.LOWEST, null)
+                val subscriber = if (method.returnType == Void.TYPE) if (invokerType is DirectInvoker) SubscriberVoidParent(obj, EventPriority.LOWEST, false, null) else SubscriberVoid(obj, EventPriority.LOWEST, false, null) else SubscriberObject(obj, EventPriority.LOWEST, false, null)
                 val parameterClazz = method.parameterTypes[0]
                 subscribers[parameterClazz]?.remove(subscriber)
                 if (Event::class.java.isAssignableFrom(parameterClazz)) {
@@ -121,6 +130,12 @@ class KEventBus @JvmOverloads constructor(
                     constructor.isAccessible = true
                     val event = cachedEvents.getOrPut(parameterClazz) { constructor.newInstance() as Event }
                     event?.listenerList?.unregister(busId, SubscriberFMLEventListener(subscriber))
+                }
+
+                for (cached in cachedSuperclasses) {
+                    if (parameterClazz.isAssignableFrom(cached.key)) {
+                        cached.setValue(null) // clear cache
+                    }
                 }
             }
         }
@@ -130,12 +145,52 @@ class KEventBus @JvmOverloads constructor(
      * Posts the event instance given to all the subscribers
      * that are subscribed to the events class.
      */
-    fun post(event: Any) {
-        val events = subscribers[event.javaClass] ?: return
+    fun post(event: Event) {
+        var events = cachedSuperclasses[event.javaClass]
+        if (events == null) {
+            events = subscribers[event.javaClass]
+            var superclass = event.javaClass.superclass
+            while (superclass != null) {
+                subscribers[superclass]?.let { if (events != null) events!!.addAll(it) else events = it }
+                superclass = superclass.superclass
+            }
+            if (events != null) cachedSuperclasses[event.javaClass] = events
+            else cachedSuperclasses[event.javaClass] = mutableListOf() // we don't want to check again
+        }
+        if (events == null || events!!.size == 0) return
         // executed in descending order
-        for (i in (events.size - 1) downTo 0) {
+        for (i in (events!!.size - 1) downTo 0) {
             try {
-                events[i].invoke(event)
+                val subscriber = events!![i]
+                if (!event.isCancelable || !event.isCanceled || subscriber.receiveCancelled)
+                    subscriber.invoke(event)
+            } catch (e: Exception) {
+                exceptionHandler.handle(e)
+            }
+        }
+    }
+
+    /**
+     * Posts the event instance given to all the subscribers
+     * that are subscribed to the events class.
+     */
+    fun post(event: Any) {
+        var events = cachedSuperclasses[event.javaClass]
+        if (events == null) {
+            events = subscribers[event.javaClass]
+            var superclass = event.javaClass.superclass
+            while (superclass != null) {
+                subscribers[superclass]?.let { if (events != null) events!!.addAll(it) else events = it }
+                superclass = superclass.superclass
+            }
+            if (events != null) cachedSuperclasses[event.javaClass] = events
+            else cachedSuperclasses[event.javaClass] = mutableListOf() // we don't want to check again
+        }
+        if (events == null) return
+        // executed in descending order
+        for (i in (events!!.size - 1) downTo 0) {
+            try {
+                events!![i].invoke(event)
             } catch (e: Exception) {
                 exceptionHandler.handle(e)
             }
@@ -152,6 +207,7 @@ class KEventBus @JvmOverloads constructor(
      */
     inline fun <reified T> post(supplier: () -> T) {
         val events = getSubscribedEvents(T::class.java) ?: return
+        if (events.size == 0) return
         val event = supplier()
         // executed in descending order
         for (i in (events.size - 1) downTo 0) {
@@ -159,13 +215,18 @@ class KEventBus @JvmOverloads constructor(
         }
     }
 
-    fun getSubscribedEvents(clazz: Class<*>) = subscribers[clazz]
-
-    private inline fun iterateSubclasses(obj: Any, body: (Class<*>) -> Unit) {
-        var postClazz: Class<*>? = obj.javaClass
-        do {
-            body(postClazz!!)
-            postClazz = postClazz.superclass
-        } while (postClazz != null)
+    fun getSubscribedEvents(clazz: Class<*>): MutableList<Subscriber>? {
+        var events = cachedSuperclasses[clazz]
+        if (events == null) {
+            events = subscribers[clazz]
+            var superclass = clazz.superclass
+            while (superclass != null) {
+                subscribers[superclass]?.let { if (events != null) events!!.addAll(it) else events = it }
+                superclass = superclass.superclass
+            }
+            if (events != null) cachedSuperclasses[clazz] = events
+            else cachedSuperclasses[clazz] = mutableListOf() // we don't want to check again
+        }
+        return events
     }
 }
